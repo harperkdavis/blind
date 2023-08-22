@@ -3,6 +3,8 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
+import spotify from './spotify.ts';
+
 const app = express();
 
 app.use(express.static('dist'));

@@ -50,6 +50,7 @@ onMount(() => {
         
         vec3 color = vec3(0);
         float weights[8];
+        float biggestWeight = 0.0;
         float noise = texture2D(u_texture, v_texcoord * u_scale).r;
         for (int i = 0; i < 8; i++) {
             float sqrDist = pow(v_texcoord.x - u_offsets[i].x, 2.0) + pow(v_texcoord.y - u_offsets[i].y, 2.0);
@@ -58,6 +59,19 @@ onMount(() => {
             if (u_skip[i]) {
                 weights[i] = 0.0;
             }
+
+            if (weights[i] > biggestWeight) {
+                biggestWeight = weights[i];
+            }
+        }
+
+        for (int i = 0; i < 8; i++) {
+            if (weights[i] == biggestWeight) {
+                weights[i] *= 1.04;
+            }
+            
+            weights[i] /= biggestWeight;
+            weights[i] = pow(weights[i], 2.0);
         }
 
         float totalWeight = 0.0;
@@ -128,13 +142,13 @@ onMount(() => {
     return createLoop(render);
 });
 
-function hexToRgb(hex) {
+function hexToRgb(hex: string): [number, number, number] {
   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16) / 255,
-    g: parseInt(result[2], 16) / 255,
-    b: parseInt(result[3], 16) / 255,
-  } : null;
+  return result ? [
+    parseInt(result[1], 16) / 255,
+    parseInt(result[2], 16) / 255,
+    parseInt(result[3], 16) / 255,
+ ] : null;
 }
 
 function setColors(colors: { color: string | [number, number, number], position: [number, number] }[]) {
@@ -152,11 +166,11 @@ function setColors(colors: { color: string | [number, number, number], position:
     }
 
     for (let i = 0; i < colors.length; i++) {
-        const color = typeof colors[i].color === "string" ? hexToRgb(colors[i].color) : { r: colors[i].color[0] as number, g: colors[i].color[1] as number, b: colors[i].color[2] as number };
+        const color = typeof colors[i].color === "string" ? hexToRgb(colors[i].color as string) : colors[i].color as [number, number, number];
 
-        colorsArray[i * 3] = color.r;
-        colorsArray[i * 3 + 1] = color.g;
-        colorsArray[i * 3 + 2] = color.b;
+        colorsArray[i * 3] = color[0];
+        colorsArray[i * 3 + 1] = color[1];
+        colorsArray[i * 3 + 2] = color[2];
 
         offsetsArray[i * 2] = colors[i].position[0];
         offsetsArray[i * 2 + 1] = colors[i].position[1];
@@ -177,15 +191,83 @@ function lerp(a: number, b: number, t: number) {
     return a + (b - a) * t;
 }
 
+function sigmoid(x: number) {
+    return 1 / (1 + Math.exp(-x));
+}
+
+function lerpPosition(a: [number, number], b: [number, number], t: number): [number, number] {
+    return [
+        lerp(a[0], b[0], t),
+        lerp(a[1], b[1], t),
+    ];
+}
+
+function lerpColor(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
+    return [
+        lerp(a[0], b[0], t),
+        lerp(a[1], b[1], t),
+        lerp(a[2], b[2], t),
+    ];
+}
+
+let prevPhase = 0;
+let phaseChangeTime = 0;
+
+export let phase = 0;
+export let albumColors: { r: number, g: number, b: number, a: number }[] = [];
+
 function render(elapsed: number, dt: number) {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    setColors([
-        { color: "#182848", position: [normalizedNoise(elapsed * 0.01, 1000), normalizedNoise(elapsed * 0.01, 2000)] },
-        { color: "#4b6cb7", position: [normalizedNoise(elapsed * 0.01, 3000), normalizedNoise(elapsed * 0.01, 4000)] },
-    ]);
+    if (prevPhase !== phase) {
+        phaseChangeTime = elapsed;
+        prevPhase = phase;
+    }
 
+    let darkBlue = "#0c1424";
+    let lightBlue = "#25365b";
+
+    let darkBlueRgb = hexToRgb(darkBlue);
+    let lightBlueRgb = hexToRgb(lightBlue);
+
+    let black: [number, number, number] = [0, 0, 0];
+
+    const speed = 0.01;
+    let positions: [number, number][] = new Array(8).fill([0, 0]).map((_, i) => {
+        return [normalizedNoise(elapsed * speed, i * 2000), normalizedNoise(elapsed * speed, i * 2000 + 1000)];
+    });
+
+    let smooth = Math.exp(-(elapsed - phaseChangeTime));
+    let invSmooth = 1 - smooth;
+    if (phase === 0) {
+        setColors([
+            { color: darkBlueRgb, position: positions[0] },
+            { color: lightBlueRgb, position: positions[1] },
+        ]);
+    } else if (phase === 1) {
+        setColors([
+            { color: lerpColor(darkBlueRgb, black, invSmooth), position: lerpPosition(positions[0], [0.5, 0.5], invSmooth)},
+            { color: lerpColor(lightBlueRgb, black, invSmooth), position: lerpPosition(positions[0], [0.5, 0.5], invSmooth)}
+        ])
+    } else if (phase === 2) {
+        let centerAttraction = 1 - Math.pow(smooth, 3);
+        let elapsedSinceChange = elapsed - phaseChangeTime;
+        let spinny = sigmoid(elapsedSinceChange - 4) * 4 * Math.PI * 2;
+        let spinAttraction = Math.min(1, Math.exp(-(elapsedSinceChange - 6) / 2));
+        setColors(albumColors.map((color, i) => {
+            let angle = i / 8 * Math.PI * 2 + spinny;
+            let spinX = 0.5 + Math.cos(angle) * centerAttraction * 0.3;
+            let spinY = 0.5 + Math.sin(angle) * centerAttraction * 0.3;
+            let x = lerp(positions[i][0], spinX, spinAttraction);
+            let y = lerp(positions[i][1], spinY, spinAttraction);
+
+            return {
+                color: [lerp(0, color.r / 255, centerAttraction), lerp(0, color.g / 255, centerAttraction), lerp(0, color.b / 255, centerAttraction)],
+                position: [x, y],
+            };
+        }));
+    }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
@@ -219,7 +301,7 @@ function handleResize() {
 </script>
 
 <div class="canvas-container">
-    <canvas class="fade" bind:this={canvas} ></canvas>
+    <canvas class:full-opacity={phase === 2} class:half-opacity={phase === 0} bind:this={canvas} ></canvas>
     
 </div>
 <svelte:window on:resize|passive={handleResize} />
@@ -238,18 +320,16 @@ function handleResize() {
         width: 100%;
         height: 100%;
         image-rendering: pixelated;
+        opacity: 0;
+        animation: fade-in 4s ease-in-out forwards;
     }
 
-    @keyframes fade {
+    @keyframes fade-in {
         from {
             opacity: 0;
         }
         to {
-            opacity: 0.5;
+            opacity: 1;
         }
-    }
-
-    .fade {
-        animation: fade 10s ease-in-out forwards;
     }
 </style>

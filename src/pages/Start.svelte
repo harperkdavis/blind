@@ -1,20 +1,25 @@
+<script lang="ts">
+    export let navigateTo: (page: string) => void;
+    export let beginNavigatesTo: string;
 
+    function begin() {
+        if (!localStorage.getItem("earblind")) {
+            localStorage.setItem("earblind", "true");
+            navigateTo('tutorial');
+        } else {
+            navigateTo(beginNavigatesTo);
+        }
+    }
+</script>
 
 <div class="content">
     <h1 class="title wide animate-in">EARBLIND</h1>
-    <h3 class="difference buttonlike begin-button animate-delayed animate-in">BEGIN</h3>
+    <button class="difference buttonlike begin-button animate-delayed animate-in" on:click={begin}>
+        <h3>BEGIN</h3>
+    </button>
 </div>
 
 <style>
-    .content {
-        position: absolute;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100vw;
-        height: 100vh;
-    }
     
     .title {
         text-align: center;
@@ -41,6 +46,14 @@
         animation-delay: 1s;
         animation-fill-mode: forwards;
         opacity: 0;
+    }
+
+    button {
+        padding: 0;
+        margin: 0;
+        background: 0;
+        border: 0;
+        outline: 0;
     }
 
     @keyframes fade-in {

@@ -58,23 +58,63 @@ h1 {
   cursor: pointer;
 }
 
-button {
+.blurred {
+  filter: blur(4px);
+  opacity: 0.5;
+}
+
+.content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.window {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: 100vw;
+  height: 100vh;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  max-width: 320px;
+  max-height: 440px;
+  background-color: #000;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  color: white;
+  font-weight: 700;
+
+  animation: fade-and-move 2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.window-short {
+  max-height: 240px;
+}
+
+.window-tall {
+  max-height: 640px;
+}
+
+@keyframes fade-and-move {
+  from {
+      opacity: 0;
+      transform: translateY(1rem);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+button {
+  background-color: #0000;
+  border: 0;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
 @media (prefers-color-scheme: light) {
