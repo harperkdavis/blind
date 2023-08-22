@@ -45,7 +45,6 @@
         localStorage.setItem('fastForward', 'true');
         page = 'search';
         window.history.replaceState({}, document.title, "/");
-        window.location.reload();
     }
 
     let accessToken = localStorage.getItem('accessToken');
