@@ -34,9 +34,19 @@
         await playNextTrack();
     });
 
+    const loadVoices = async () => {
+        pushDebugStatus('Loading voices...');
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            pushDebugStatus('No voices available. Retrying...');
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await loadVoices();
+        }
+    }
+
     const asyncSay = async (text: string) => {
         pushDebugStatus('Saying: ' + text);
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<void>(async (resolve, reject) => {
             pushDebugStatus('Saying...');
             
             if (!window.speechSynthesis) {
@@ -47,6 +57,7 @@
             }
 
             const utterance = new SpeechSynthesisUtterance(text);
+            await loadVoices();
             const voices = window.speechSynthesis.getVoices();
 
             if (voices.length === 0) {
