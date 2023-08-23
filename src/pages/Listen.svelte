@@ -38,7 +38,33 @@
         pushDebugStatus('Saying: ' + text);
         return new Promise<void>((resolve, reject) => {
             pushDebugStatus('Saying...');
+            
+            if (!window.speechSynthesis) {
+                error = 'Speech synthesis not supported.';
+                pushDebugStatus('Speech synthesis not supported.');
+                reject('Speech synthesis not supported.');
+                return;
+            }
+
             const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+
+            if (voices.length === 0) {
+                error = 'No voices available.';
+                pushDebugStatus('No voices available.');
+                reject('No voices available.');
+                return;
+            }
+
+            const voice = voices[0];
+            pushDebugStatus('Voice: ' + voice.name);
+            
+            utterance.voice = voice;
+            utterance.pitch = 1;
+            utterance.rate = 1;
+            utterance.volume = 1;
+            utterance.lang = 'en-US';
+
             utterance.onend = () => {
                 pushDebugStatus('Finished saying...');
                 resolve();
