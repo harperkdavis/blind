@@ -28,7 +28,7 @@ const refreshSpotifyToken = async () => {
     });
 
     console.log('Spotify token refreshed!');
-    setTimeout(refreshSpotifyToken, 1000 * 60 * 60);
+    setTimeout(refreshSpotifyToken, 1000 * 60 * 10);
 };
 await refreshSpotifyToken();
 

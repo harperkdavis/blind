@@ -109,6 +109,7 @@ router.get('/search', async (req, res) => {
   });
 
   if (response.status !== 200) {
+    console.log(response.data);
     return res.status(400).json({
       message: 'Invalid query',
     });

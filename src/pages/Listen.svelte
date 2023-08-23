@@ -7,12 +7,14 @@
 
     export let navigateTo: (page: string) => void;
 
-    $: data = axios.get('/package/?id=' + albumId).then(res => { console.log(res); return res.data; });
+    $: data = axios.get('/package/?id=' + albumId).then(res => { console.log(res); return res.data; }).catch(err => { console.error(err); return {error: err}; });
     
     let currentTrack = -1;
 
     let playingInterval = null;
     let startNext = true;
+
+    let error = '';
 
     onMount(async () => {
         const awaitedData = await data;
@@ -24,7 +26,11 @@
         return new Promise((resolve, reject) => {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.onend = resolve;
-            utterance.onerror = reject;
+            utterance.onerror = (err) => {
+                console.error(err);
+                error = 'Speech synthesis error: ' + err;
+                reject(err);
+            }
             window.speechSynthesis.speak(utterance);
         });
     }
@@ -82,7 +88,12 @@
     }
 
     const check = async () => {
-        const res = await axios.get('/check/?access_token=' + localStorage.getItem('accessToken'));
+        const res = await axios.get('/check/?access_token=' + localStorage.getItem('accessToken'), { validateStatus: () => true });
+        if (res.status !== 200) {
+            error = 'API Error: ' + res.data.message;
+            clearInterval(playingInterval);
+            return;
+        }
         if (res.data.move_on) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
             await playNextTrack();
@@ -90,7 +101,12 @@
     }
 
     const playSong = async (album_id: string, track_id: string) => {
-        await axios.post('/play', {album_id, track_id, access_token: localStorage.getItem('accessToken')});
+        const res = await axios.post('/play', {album_id, track_id, access_token: localStorage.getItem('accessToken')}, { validateStatus: () => true });
+        if (res.status !== 200) {
+            error = 'API Error: ' + res.data.message;
+            clearInterval(playingInterval);
+            return;
+        }
 
         if (playingInterval) {
             clearInterval(playingInterval);
@@ -125,6 +141,8 @@
 
 {/await}
 
+<p class="error">{error}</p>
+
 <style>
     .top-left {
         position: absolute;
@@ -135,7 +153,17 @@
         color: #fff;
         mix-blend-mode: difference;
         text-align: left;
-        filter: contrast(10000%)
+    }
+
+    .error {
+        mix-blend-mode: normal !important;
+        color: red;
+        filter: drop-shadow(0 0 0.5rem red);
+        background: #000;
+
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
     }
 
     .album-name {

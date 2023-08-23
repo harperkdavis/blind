@@ -27,7 +27,7 @@ const refreshGeniusToken = async () => {
     });
 
     console.log('Genius token refreshed!');
-    setTimeout(refreshGeniusToken, 1000 * 60 * 60);
+    setTimeout(refreshGeniusToken, 1000 * 60 * 10);
 };
 
 await refreshGeniusToken();

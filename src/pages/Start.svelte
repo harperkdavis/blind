@@ -20,7 +20,6 @@
 </div>
 
 <style>
-    
     .title {
         text-align: center;
         line-height: 0;
