@@ -18,6 +18,7 @@
         announceTracks: true,
         informationSnippets: true,
         hideFutureTracks: true,
+        debug: false,
     };
     let settings = { ...defaultSettings, ...JSON.parse(localStorage.getItem('settings')) } || defaultSettings;
     localStorage.setItem('settings', JSON.stringify(settings));

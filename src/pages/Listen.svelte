@@ -15,23 +15,41 @@
     let startNext = true;
 
     let error = '';
+    let debugStatus = ['Started...'];
+
+    const pushDebugStatus = (status: string) => {
+        debugStatus.push(status);
+        if (debugStatus.length > 20) {
+            debugStatus.shift();
+        }
+        debugStatus = [...debugStatus];
+    }
 
     onMount(async () => {
+        pushDebugStatus('Mounted...');
+        
         const awaitedData = await data;
+        pushDebugStatus('Data loaded... ' + awaitedData.album.name);
         await asyncSay('You are listening to: ' + awaitedData.album.name + '. . . Enjoy!');
         await playNextTrack();
     });
 
     const asyncSay = async (text: string) => {
-        return new Promise((resolve, reject) => {
+        pushDebugStatus('Saying: ' + text);
+        return new Promise<void>((resolve, reject) => {
+            pushDebugStatus('Saying...');
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.onend = resolve;
+            utterance.onend = () => {
+                pushDebugStatus('Finished saying...');
+                resolve();
+            }
             utterance.onerror = (err) => {
                 console.error(err);
                 error = 'Speech synthesis error: ' + err;
                 reject(err);
             }
             window.speechSynthesis.speak(utterance);
+            pushDebugStatus('Said...');
         });
     }
 
@@ -95,13 +113,16 @@
             return;
         }
         if (res.data.move_on) {
+            pushDebugStatus('Moving on...');
             await new Promise((resolve) => setTimeout(resolve, 1000));
             await playNextTrack();
         }
     }
 
     const playSong = async (album_id: string, track_id: string) => {
+        pushDebugStatus('Playing song... ' + album_id + ', ' + track_id + ', ' + localStorage.getItem('accessToken') + '...');
         const res = await axios.post('/play', {album_id, track_id, access_token: localStorage.getItem('accessToken')}, { validateStatus: () => true });
+        
         if (res.status !== 200) {
             error = 'API Error: ' + res.data.message;
             clearInterval(playingInterval);
@@ -142,6 +163,13 @@
 {/await}
 
 <p class="error">{error}</p>
+{#if settings.debug}
+<div class="status">
+{#each debugStatus as statusItem}
+<p class="status-item">{statusItem}</p>
+{/each}
+</div>
+{/if}
 
 <style>
     .top-left {
@@ -164,6 +192,25 @@
         position: absolute;
         bottom: 1rem;
         left: 1rem;
+    }
+
+    .status {
+        mix-blend-mode: normal !important;
+        color: cyan;
+        filter: drop-shadow(0 0 0.5rem cyan);
+        background: #000;
+
+        position: absolute;
+        bottom: 3rem;
+        left: 1rem;
+        max-width: 50vw;
+
+    }
+
+    .status-item {
+        margin: 0;
+        padding: 0.5rem;
+        text-align: left;
     }
 
     .album-name {

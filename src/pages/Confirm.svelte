@@ -59,6 +59,9 @@
                 <button class="settings-option" class:setting-enabled={settings.hideFutureTracks} on:click={() => setSettings({ hideFutureTracks: !settings.hideFutureTracks})}>
                     <p>HIDE FUTURE TRACKS</p>
                 </button>
+                <button class="settings-option" class:setting-enabled={settings.debug} on:click={() => setSettings({ debug: !settings.debug })}>
+                    <p>DEBUG</p>
+                </button>
             </div>
             <button on:click={navigateBack} class="dissapearing" class:dissapeared={animating}>
                 <h2 class="wide back">GO BACK</h2>
