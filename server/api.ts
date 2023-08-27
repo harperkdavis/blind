@@ -41,7 +41,7 @@ router.get('/auth/callback', async (req, res) => {
 
   const code = req.query.code;
 
-  const response = await spotify.post('https://accounts.spotify.com/api/token', {
+  const response = await (await spotify()).post('https://accounts.spotify.com/api/token', {
     grant_type: 'authorization_code',
     code,
     redirect_uri: REDIRECT_URI,
@@ -67,7 +67,7 @@ router.get('/auth/refresh', async (req, res) => {
 
   const refresh_token = req.query.refresh_token;
 
-  const response = await spotify.post('https://accounts.spotify.com/api/token', {
+  const response = await (await spotify()).post('https://accounts.spotify.com/api/token', {
     grant_type: 'refresh_token',
     refresh_token,
   }, {
@@ -99,7 +99,7 @@ router.get('/search', async (req, res) => {
     });
   }
 
-  const response = await spotify.get('/search', {
+  const response = await (await spotify()).get('/search', {
     params: {
       q,
       type: 'album',
@@ -128,7 +128,7 @@ router.get('/album', async (req, res) => {
     });
   }
 
-  const response = await spotify.get('/albums/' + id, {
+  const response = await (await spotify()).get('/albums/' + id, {
     validateStatus: () => true,
   });
 
@@ -139,7 +139,7 @@ router.get('/album', async (req, res) => {
   }
 
   // get album cover
-  const cover = await spotify.get(response.data.images[2].url, {
+  const cover = await (await spotify()).get(response.data.images[2].url, {
     responseType: 'arraybuffer',
   });
 
@@ -246,7 +246,7 @@ router.get('/package', async (req, res) => {
     });
   }
 
-  const response = await spotify.get('/albums/' + id, {
+  const response = await (await spotify()).get('/albums/' + id, {
     validateStatus: () => true,
   });
 
@@ -263,7 +263,7 @@ router.get('/package', async (req, res) => {
   console.log('Listening to: ' + album.name);
   
   for (let i = 0; i < album.tracks.total / 50; i++) {
-    const response = await spotify.get('/albums/' + id + '/tracks', {
+    const response = await (await spotify()).get('/albums/' + id + '/tracks', {
       params: {
         limit: 50,
         offset: i * 50,
